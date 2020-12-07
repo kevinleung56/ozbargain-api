@@ -5,3 +5,4 @@ name: express-starter
 
 inputs:
   src: ./
+  region: ap-southeast-2
