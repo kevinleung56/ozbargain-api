@@ -1,0 +1,7 @@
+org: kevinleung
+app: ozbargain-api
+component: express
+name: express-starter
+
+inputs:
+  src: ./
