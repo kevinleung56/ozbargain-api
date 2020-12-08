@@ -4,7 +4,8 @@
   "description": "",
   "main": "app.js",
   "dependencies": {
-    "express": "^4.17.1"
+    "express": "^4.17.1",
+    "rss-parser": "^3.9.0"
   },
   "scripts": {
     "deploy": "serverless deploy",
