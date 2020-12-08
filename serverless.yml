@@ -1,7 +1,7 @@
 org: kevinleung
 app: ozbargain-api
 component: express
-name: express-starter
+name: ozbargain-api
 
 inputs:
   src: ./
