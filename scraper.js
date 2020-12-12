@@ -5,11 +5,13 @@ const cheerio = require('cheerio');
 const axios = require('axios').default;
 
 const x = new xray();
-const OZBARGAIN_FEED_URL = 'https://www.ozbargain.com.au/deals';
+const OZBARGAIN_DEALS_URL = 'https://www.ozbargain.com.au/deals';
+const OZBARGAIN_FORUM_HOME_URL = 'https://www.ozbargain.com.au/forum';
+const OZBARGAIN_LIVE_DEALS_URL = 'https://www.ozbargain.com.au/forum';
 
 function fetchDeals() {
   return new Promise(function (resolve, reject) {
-    x(OZBARGAIN_FEED_URL, '.node-ozbdeal', [
+    x(OZBARGAIN_DEALS_URL, '.node-ozbdeal', [
       {
         title: 'h2.title@data-title',
         link: 'h2.title a@href',
@@ -42,6 +44,18 @@ function fetchDeals() {
   });
 }
 
+function fetchDeal(dealId) {}
+
+function fetchForums() {}
+
+function fetchForum(forumId) {}
+
+function fetchLiveDeals() {}
+
 module.exports = {
   fetchDeals: fetchDeals,
+  fetchForums: fetchForums,
+  fetchDeal: fetchDeal,
+  fetchForum: fetchForum,
+  fetchLiveDeals: fetchLiveDeals,
 };
