@@ -171,24 +171,24 @@ function parseDealDescription(description) {
     let $ = cheerio.load(description);
     let childs = $('body').children();
 
-    let truncateLen = 165;
+    const MAX_DESC_LENGTH = 165;
     let htmlLen = 0;
     if (childs.length > 0) {
       let child1 = $(childs[0]);
       let child1Text = child1.text();
 
-      if (child1Text.length > truncateLen) {
-        child1.text(child1Text.substring(0, truncateLen) + ' ...');
+      if (child1Text.length > MAX_DESC_LENGTH) {
+        child1.text(child1Text.substring(0, MAX_DESC_LENGTH) + ' ...');
       }
 
       htmlLen = child1.text().length;
 
       html += $.html(childs[0]) + '\n';
     }
-    if (htmlLen < truncateLen && childs.length > 1) {
+    if (htmlLen < MAX_DESC_LENGTH && childs.length > 1) {
       let child2 = $(childs[1]);
       let child2Text = child2.text();
-      let diffLen = truncateLen - htmlLen;
+      let diffLen = MAX_DESC_LENGTH - htmlLen;
       if (child2Text.length > diffLen) {
         child2.text(child2Text.substring(0, diffLen));
       }
@@ -199,7 +199,7 @@ function parseDealDescription(description) {
     let text = cheerio.load(html).text();
     return text;
   } catch (e) {
-    logError('An error occurred while parsing description ', e, description);
+    // logError('An error occurred while parsing description ', e, description);
 
     return '';
   }

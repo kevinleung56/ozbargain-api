@@ -3,12 +3,26 @@
 // eslint-disable-next-line import/no-unresolved
 const express = require('express');
 const scraper = require('./scraper');
-
+const showdown = require('showdown');
 const app = express();
 
 // Routes
 app.get('/', async (req, res) => {
-  res.send(`Request received: ${req.method} - ${req.path}`);
+  let converter = new showdown.Converter({ tables: true });
+  // converter.setFlavor('github');
+  // let tableMarkdown =
+  //   '|     |    GET   |   POST   |   h4   |\n' +
+  //   '|:------|:-------:|:-------:|-------:|\n' +
+  //   '| 100   | [a][1]  | ![b][2] |\n' +
+  //   '| *foo* | **bar** | ~~baz~~ |';
+  let markdown =
+    '# Welcome to the Ozbargain API!\n' +
+    // '##The following is the API documentation\n' +
+    '### Hope you enjoy :)\n' +
+    '#### - Kevin\n';
+  // tableMarkdown;
+  let html = converter.makeHtml(markdown);
+  res.status(200).send(html);
 });
 
 app.get('/deals', async (req, res) => {
@@ -74,10 +88,10 @@ app.use((err, req, res, next) => {
 });
 
 // DEBUG
-// const port = 3000;
+const port = 3000;
 
-// app.listen(port, () => {
-//   console.log(`Example app listening at http://localhost:${port}`);
-// });
+app.listen(port, () => {
+  console.log(`Example app listening at http://localhost:${port}`);
+});
 
 module.exports = app;
