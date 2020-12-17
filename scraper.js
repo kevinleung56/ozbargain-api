@@ -30,19 +30,22 @@ function fetchDeals() {
         title: 'h2.title@data-title',
         link: 'h2.title a@href',
         meta: {
-          submitted: 'div.submitted',
+          submitted: x('div.submitted', {
+            associated: 'span.storerep',
+            username: 'strong',
+            thirdParty: 'span.referrer',
+          }),
           image: 'img.gravatar@src',
         },
-        content: 'div.content@html',
+        coupon: 'div.couponcode',
+        description: x('.node-ozbdeal', ['p']),
         vote: {
           up: 'span.voteup',
           down: 'span.votedown',
         },
         gravatar: 'img.gravatar@src',
-
         snapshot: {
           link: '.foxshot-container a@href',
-          title: '.foxshot-container a@title',
           image: '.foxshot-container img@src',
         },
         category: 'ul.links span.tag a',
@@ -65,22 +68,26 @@ function fetchDeal(dealId) {
         id: dealId,
         title: 'h1#title@data-title',
         meta: {
-          submitted: 'div.submitted',
+          submitted: x('div.submitted', {
+            associated: 'span.storerep',
+            author: 'strong',
+            thirdParty: 'span.referrer',
+            // date: - need to add date from page here
+          }),
           image: 'img.gravatar@src',
           labels: ['div.messages ul li'],
           freebie: 'span.nodefreebie@text',
           expired: '.links span.expired',
           upcoming: '.links span.inactive',
         },
-        description: 'div.content@html',
+        coupon: 'div.couponcode',
+        description: x('.node-ozbdeal', ['p']),
         vote: {
           up: 'span.voteup',
           down: 'span.votedown',
         },
-
         snapshot: {
           link: '.foxshot-container a@href',
-          title: '.foxshot-container a@title',
           image: '.foxshot-container img@src',
         },
         category: 'ul.links span.tag a',
@@ -88,35 +95,14 @@ function fetchDeal(dealId) {
       })
         .then(function (deal) {
           let errors = [];
-          let content = parseDealDescription(deal.description);
-          if (!content || content.length < 2) {
-            errors.push('Failed to parse content from description');
-          }
-          deal.content = content;
           deal.meta = parseDealMeta(deal.meta);
 
           if (deal.vote) {
-            try {
-              if (!deal.vote.up) {
-                deal.vote.up = '0';
-              }
-              var upVote = parseInt(deal.vote.up);
-              if (isNaN(upVote)) {
-                deal.vote.up = '0';
-              }
-            } catch (e) {
+            if (!deal.vote.up || isNaN(parseInt(deal.vote.up))) {
               deal.vote.up = '0';
             }
 
-            try {
-              if (!deal.vote.down) {
-                deal.vote.down = '0';
-              }
-              var downVote = parseInt(deal.vote.down);
-              if (isNaN(downVote)) {
-                deal.vote.down = '0';
-              }
-            } catch (e) {
+            if (!deal.vote.down || isNaN(parseInt(deal.vote.down))) {
               deal.vote.down = '0';
             }
           } else {
@@ -126,22 +112,20 @@ function fetchDeal(dealId) {
             };
           }
 
-          let meta = deal.meta;
-
-          if (!meta.author || meta.author.length < 2) {
-            errors.push('Failed to parse author from ' + meta.submitted);
+          if (!deal.meta.submitted.author) {
+            errors.push('Failed to parse author from ' + deal.meta.submitted);
           }
-          if (!meta.date || meta.date.length < 16 || meta.date.length > 20) {
-            errors.push('Failed to parse date from ' + meta.submitted);
+          if (
+            !deal.meta.date ||
+            deal.meta.date.length < 16 ||
+            deal.meta.date.length > 20
+          ) {
+            errors.push('Failed to parse date from ' + deal.meta.submitted);
           }
-          if (!meta.timestamp || meta.timestamp.length < 8) {
-            errors.push('Failed to parse timestamp from ' + meta.submitted);
-          }
-
-          deal.snapshot = parseDealSnapshot(deal.snapshot);
-
-          if (!deal.snapshot.goto || deal.snapshot.goto.length < 5) {
-            errors.push('Failed to parse snapshot from ' + snapshot.title);
+          if (!deal.meta.timestamp || deal.meta.timestamp.length < 8) {
+            errors.push(
+              'Failed to parse timestamp from ' + deal.meta.submitted
+            );
           }
 
           deal.errors = errors;
@@ -162,78 +146,33 @@ function fetchForum(forumId) {}
 
 function fetchLiveDeals() {}
 
-function parseDealDescription(description) {
-  let html = '';
-  try {
-    if (!description) {
-      return html;
-    }
-    let $ = cheerio.load(description);
-    let childs = $('body').children();
-
-    const MAX_DESC_LENGTH = 165;
-    let htmlLen = 0;
-    if (childs.length > 0) {
-      let child1 = $(childs[0]);
-      let child1Text = child1.text();
-
-      if (child1Text.length > MAX_DESC_LENGTH) {
-        child1.text(child1Text.substring(0, MAX_DESC_LENGTH) + ' ...');
-      }
-
-      htmlLen = child1.text().length;
-
-      html += $.html(childs[0]) + '\n';
-    }
-    if (htmlLen < MAX_DESC_LENGTH && childs.length > 1) {
-      let child2 = $(childs[1]);
-      let child2Text = child2.text();
-      let diffLen = MAX_DESC_LENGTH - htmlLen;
-      if (child2Text.length > diffLen) {
-        child2.text(child2Text.substring(0, diffLen));
-      }
-
-      child2.text(child2.text() + '...');
-      html += $.html(childs[1]) + '\n';
-    }
-    let text = cheerio.load(html).text();
-    return text;
-  } catch (e) {
-    // logError('An error occurred while parsing description ', e, description);
-
-    return '';
-  }
-}
-
 function parseDealMeta(meta) {
-  let author, submitDate, timestamp, expiredDate, upcomingDate;
+  let submitDate, timestamp, expiredDate, upcomingDate;
   if (meta.submitted) {
-    author = meta.submitted.split(' on ')[0];
+    // let dateMatch = meta.submitted.match(DateRegex);
+    // if (dateMatch.length > 0) {
+    //   submitDate = dateMatch[0];
+    //   let timeMatch = meta.submitted.match(TimeRegex);
+    //   if (timeMatch.length > 0) {
+    //     submitDate += ' ';
+    //     submitDate += timeMatch[0];
+    //   }
+    // }
 
-    let dateMatch = meta.submitted.match(DateRegex);
-    if (dateMatch.length > 0) {
-      submitDate = dateMatch[0];
-      let timeMatch = meta.submitted.match(TimeRegex);
-      if (timeMatch.length > 0) {
-        submitDate += ' ';
-        submitDate += timeMatch[0];
-      }
-    }
+    // if (submitDate && submitDate.length > 0) {
+    //   timestamp = DateTime.fromFormat(submitDate, 'dd/MM/yyyy T').toMillis();
+    // }
 
-    if (submitDate && submitDate.length > 0) {
-      timestamp = DateTime.fromFormat(submitDate, 'dd/MM/yyyy T').toMillis();
-    }
-
-    let expired = meta.expired;
-    if (expired) {
-      let expiredMatch = expired.match(ExpiredRegex);
-      if (expiredMatch && expiredMatch.length > 0) {
-        expiredDate = DateTime.fromFormat(
-          expiredMatch[0],
-          'dd MMM t'
-        ).toMillis();
-      }
-    }
+    // let expired = meta.expired;
+    // if (expired) {
+    //   let expiredMatch = expired.match(ExpiredRegex);
+    //   if (expiredMatch && expiredMatch.length > 0) {
+    //     expiredDate = DateTime.fromFormat(
+    //       expiredMatch[0],
+    //       'dd MMM t'
+    //     ).toMillis();
+    //   }
+    // }
 
     if (meta.upcoming) {
       let upcomingDates = parseDealUpcomingDates(meta.upcoming);
@@ -254,9 +193,8 @@ function parseDealMeta(meta) {
     }
   }
 
-  meta.author = author || '';
-  meta.date = submitDate || '';
-  meta.timestamp = timestamp || 0;
+  // meta.date = submitDate || '';
+  // meta.timestamp = timestamp || 0;
   meta.expiredDate = expiredDate || 0;
   meta.upcomingDate = upcomingDate || 0;
 
@@ -303,17 +241,6 @@ function parseDealUpcomingDates(upcoming) {
   }
 
   return dates;
-}
-
-function parseDealSnapshot(snapshot) {
-  let goto = '';
-
-  if (snapshot.title) {
-    goto = snapshot.title.replace('Go to ', '');
-  }
-
-  snapshot.goto = goto;
-  return snapshot;
 }
 
 module.exports = {
