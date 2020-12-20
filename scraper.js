@@ -140,7 +140,44 @@ function fetchDeal(dealId) {
   });
 }
 
-function fetchForums() {}
+function fetchForums() {
+  return new Promise(function (resolve, reject) {
+    x(
+      OZBARGAIN_FORUM_HOME_URL,
+      'tbody',
+      x('tr', [
+        {
+          forumType: x('.container', '.name'),
+          forum: x('.forum', {
+            name: '.name',
+            description: '.description',
+          }),
+        },
+      ])
+    )
+      .then(function (data) {
+        data.map((forumObject) => {
+          cleanForumObject(forumObject, data);
+        });
+
+        resolve(data);
+      })
+      .catch(function (e) {
+        reject(e);
+      });
+  });
+}
+
+function cleanForumObject(forumObject, arr) {
+  if (forumObject.forum && Object.keys(forumObject.forum).length === 0) {
+    delete forumObject.forum;
+  }
+  if (Object.keys(forumObject).length === 0) {
+    let index = arr.indexOf(forumObject);
+    arr.splice(index, 1);
+    cleanForumObject(arr[arr.indexOf(forumObject) + 1], arr);
+  }
+}
 
 function fetchForum(forumId) {}
 
