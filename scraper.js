@@ -8,7 +8,7 @@ const { DateTime } = require('luxon');
 const x = new xray();
 const OZBARGAIN_DEALS_URL = 'https://www.ozbargain.com.au/deals';
 const OZBARGAIN_NODE_URL = 'https://www.ozbargain.com.au/node/';
-const OZBARGAIN_FORUM_HOME_URL = 'https://www.ozbargain.com.au/forum';
+const OZBARGAIN_FORUM_HOME_URL = 'https://www.ozbargain.com.au/forum/';
 const OZBARGAIN_LIVE_DEALS_URL = 'https://www.ozbargain.com.au/forum';
 
 // const Action_VoteUp = 'Vote Up';
@@ -179,7 +179,76 @@ function cleanForumObject(forumObject, arr) {
   }
 }
 
-function fetchForum(forumId) {}
+function fetchNode(nodeId) {
+  // TODO
+  return new Promise(function (resolve, reject) {
+    x(OZBARGAIN_NODE_URL.concat(nodeId), '.main', {
+      title: 'h1.title',
+      submittedBy: {
+        avatar: x('div.n-left', 'img.gravatar@src'),
+        name: x('div.submitted', 'a'),
+        date: x('div.submitted'),
+      },
+      content: 'div.content',
+      comments: x('li', [
+        {
+          commentedBy: {
+            avatar: x('div.n-left', 'img.gravatar@src'),
+            name: x('div.submitted', 'a'),
+            date: x('div.submitted'),
+            new: x('span.marker'),
+          },
+          voting: {
+            // x('div.c-vote') // TODO
+          },
+        },
+      ]),
+    })
+      .paginate('a.pager-next@href')
+      .then(function (data) {
+        resolve(data);
+      })
+      .catch(function (e) {
+        reject(e);
+      });
+  });
+}
+
+function fetchForum(forumId) {
+  return new Promise(function (resolve, reject) {
+    x(
+      OZBARGAIN_FORUM_HOME_URL.concat(forumId),
+      'tbody',
+      x('tr', [
+        {
+          topic: x('span.title', 'a'),
+          replies: {
+            existing: 'td.replies',
+            new: x('span.marker', 'a'), // TODO
+          },
+          created: x('td.created', {
+            img: 'img@src',
+            name: 'a',
+            date: 'div',
+          }),
+          lastReply: x('td.last-reply', {
+            img: 'img@src',
+            name: 'a',
+            date: 'div',
+          }),
+        },
+      ])
+    )
+      .paginate('a.pager-next@href')
+      .then(function (data) {
+        data.shift(); // Remove first element since it's always empty
+        resolve(data);
+      })
+      .catch(function (e) {
+        reject(e);
+      });
+  });
+}
 
 function fetchLiveDeals() {}
 
@@ -286,4 +355,5 @@ module.exports = {
   fetchDeal: fetchDeal,
   fetchForum: fetchForum,
   fetchLiveDeals: fetchLiveDeals,
+  fetchNode: fetchNode,
 };

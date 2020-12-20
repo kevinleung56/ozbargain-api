@@ -62,12 +62,13 @@ app.get('/forums', async (req, res) => {
 });
 
 app.get('/forum/:forumId', async (req, res) => {
-  if (req.params.forumId) {
-    const deal = await scraper.fetchForum();
-    if (deal) {
-      res.status(200).json(deal);
+  let forumId = req.params.forumId;
+  if (forumId) {
+    const forum = await scraper.fetchForum(forumId);
+    if (forum) {
+      res.status(200).json(forum);
     } else {
-      console.log(`Something is wrong with forum object: ${deal}`);
+      console.log(`Something is wrong with forum object: ${forum}`);
       res
         .status(503)
         .send(
@@ -75,7 +76,26 @@ app.get('/forum/:forumId', async (req, res) => {
         );
     }
   } else {
-    res.status(400).send('No deal ID provided');
+    res.status(400).send('No forum ID provided');
+  }
+});
+
+app.get('/node/:nodeId', async (req, res) => {
+  let nodeId = req.params.nodeId;
+  if (nodeId) {
+    const node = await scraper.fetchNode(nodeId);
+    if (node) {
+      res.status(200).json(node);
+    } else {
+      console.log(`Something is wrong with node object: ${node}`);
+      res
+        .status(503)
+        .send(
+          'Either no such node topic exists or something went wrong on our end.'
+        );
+    }
+  } else {
+    res.status(400).send('No node ID provided');
   }
 });
 
@@ -88,10 +108,10 @@ app.use((err, req, res, next) => {
 });
 
 // DEBUG
-const port = 3000;
+// const port = 3000;
 
-app.listen(port, () => {
-  console.log(`Example app listening at http://localhost:${port}`);
-});
+// app.listen(port, () => {
+//   console.log(`Example app listening at http://localhost:${port}`);
+// });
 
 module.exports = app;
