@@ -18,6 +18,7 @@
   "author": "Kevin Leung",
   "license": "ISC",
   "devDependencies": {
+    "eslint": "^7.16.0",
     "serverless": "^2.15.0"
   }
 }
