@@ -19,7 +19,8 @@ const OZBARGAIN_FORUM_HOME_URL = 'https://www.ozbargain.com.au/forum/';
 const DateRegex = /\d{1,2}\/\d{1,2}\/\d{4}/;
 const TimeRegex = /\d{1,2}:\d{1,2}/;
 const ExpiredRegex = /\d{1,2}[\sa-zA-Z]{1,10}\d{1,2}:\d{1,2}([a-zA-Z]{2})?/;
-const UpcomingRegex = /((\d{1,2}\s[a-zA-Z]{3}(\s\d{1,2}:\d{1,2})?([a-zA-Z]{2})?)|\d{2})/;
+const UpcomingDateTimeRegex = /((\d{1,2}\s[a-zA-Z]{3}(\s\d{1,2}:\d{1,2})?([a-zA-Z]{2})?)|\d{2})/;
+const UpcomingDateRegex = /\d{1,2}\s[a-zA-Z]{3}/;
 
 function fetchDeals() {
   return new Promise(function (resolve, reject) {
@@ -76,7 +77,8 @@ function fetchDeal(dealId) {
           labels: ['div.messages ul li'],
           freebie: 'span.nodefreebie@text',
           expired: '.links span.expired',
-          upcoming: '.links span.inactive',
+          upcoming: 'span.upcoming',
+          upcomingDate: 'span.nodeexpiry',
         },
         coupon: 'div.couponcode',
         description: x('.node-ozbdeal', ['p']),
@@ -113,17 +115,9 @@ function fetchDeal(dealId) {
           if (!deal.meta.submitted.author) {
             errors.push('Failed to parse author from ' + deal.meta.submitted);
           }
-          if (
-            !deal.meta.date ||
-            deal.meta.date.length < 16 ||
-            deal.meta.date.length > 20
-          ) {
+
+          if (!deal.meta.date) {
             errors.push('Failed to parse date from ' + deal.meta.submitted);
-          }
-          if (!deal.meta.timestamp || deal.meta.timestamp.length < 8) {
-            errors.push(
-              'Failed to parse timestamp from ' + deal.meta.submitted
-            );
           }
 
           deal.errors = errors;
@@ -204,7 +198,7 @@ function fetchNode(nodeId) {
       //   },
       // ]),
     })
-      .paginate('a.pager-next@href')
+      // .paginate('a.pager-next@href')
       .then(function (data) {
         resolve(data);
       })
@@ -239,9 +233,9 @@ function fetchForum(forumId) {
         },
       ])
     )
-      .paginate('a.pager-next@href')
+      // .paginate('a.pager-next@href')
       .then(function (data) {
-        data.shift(); // Remove first element since it's always empty
+        data.shift(); // remove first element since it's always empty
         resolve(data);
       })
       .catch(function (e) {
@@ -273,17 +267,17 @@ function parseDealMeta(meta) {
       }
     }
 
-    if (meta.upcoming) {
-      let upcomingDealDates = parseUpcomingDealDates(meta.upcoming);
+    if (meta.upcoming && meta.upcomingDate) {
+      let upcomingDealDates = parseUpcomingDealDates(meta.upcomingDate.trim());
       upcomingDate = upcomingDealDates.upcomingDate;
 
-      if (upcomingDealDates.expiredDate) {
+      if (upcomingDealDates.expiryDate) {
         expiredDate = upcomingDealDates.expiryDate;
       }
     }
 
     if (meta.freebie) {
-      meta.freebie = meta.freebie.trim();
+      meta.freebie = meta.freebie.trim() === 'Freebie';
     }
   }
 
@@ -296,29 +290,39 @@ function parseDealMeta(meta) {
 
 function parseUpcomingDealDates(upcoming) {
   let upcomingDate, expiryDate;
-  let upcomings = upcoming.split('–');
+  let upcomingDates = upcoming.split('–');
 
-  if (upcomings) {
-    let upcomingMatch = upcomings[0].match(UpcomingRegex);
+  if (upcomingDates) {
+    let upcomingMatch =
+      upcomingDates[0].match(UpcomingDateTimeRegex) ??
+      upcomingDates[0].match(UpcomingDateRegex);
 
     if (upcomingMatch) {
       upcomingDate = upcomingMatch[0];
-      let upcom = DateTime.fromFormat(upcomingDate, 'dd MMM h:mma');
-      if (upcomingDate.replace(' ', '').length == 2) {
-        // if (exp) {
-        //   upcom.set({ month: exp.get('M') });
-        // }
-      }
-      upcomingDate = upcom.toMillis();
+      let dateTime = DateTime.fromFormat(upcomingDate, 'd MMM h:mma');
+      let date = DateTime.fromFormat(upcomingDate, 'd MMM');
+
+      upcomingDate = dateTime.isValid
+        ? dateTime.toMillis()
+        : date.isValid
+        ? date.toMillis()
+        : date.invalidReason; // note that upcoming date response will error message if error occurs
     }
 
-    if (upcomings.length > 1) {
-      let expiryMatch = upcomings[1].match(UpcomingRegex);
+    if (upcomingDates.length > 1) {
+      let expiryMatch =
+        upcomingDates[1].match(UpcomingDateTimeRegex) ??
+        upcomingDates[1].match(UpcomingDateRegex);
+
       if (expiryMatch) {
-        expiryDate = DateTime.fromFormat(
-          expiryMatch[0],
-          'dd MMM h:mma'
-        ).toMillis();
+        let dateTime = DateTime.fromFormat(expiryMatch[0], 'd MMM h:mma');
+        let date = DateTime.fromFormat(expiryMatch[0], 'd MMM');
+
+        expiryDate = dateTime.isValid
+          ? dateTime.toMillis()
+          : date.isValid
+          ? date.toMillis()
+          : date.invalidReason; // note that upcoming date response will error message if error occurs
       }
     }
   }

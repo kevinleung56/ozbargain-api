@@ -1,6 +1,5 @@
 'use strict';
 
-// eslint-disable-next-line import/no-unresolved
 const express = require('express');
 const scraper = require('./scraper');
 const showdown = require('showdown');
@@ -100,6 +99,7 @@ app.get('/node/:nodeId', async (req, res) => {
 });
 
 // Error handler
+// eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
   if (err) {
     console.error(err);
@@ -108,10 +108,10 @@ app.use((err, req, res, next) => {
 });
 
 // DEBUG
-// const port = 3000;
+const port = 3000;
 
-// app.listen(port, () => {
-//   console.log(`Example app listening at http://localhost:${port}`);
-// });
+app.listen(port, () => {
+  console.log(`Example app listening at http://localhost:${port}`);
+});
 
 module.exports = app;
