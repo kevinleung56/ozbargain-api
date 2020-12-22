@@ -116,7 +116,7 @@ function fetchDeal(dealId) {
             errors.push('Failed to parse author from ' + deal.meta.submitted);
           }
 
-          if (!deal.meta.date) {
+          if (!deal.meta.submitted.date) {
             errors.push('Failed to parse date from ' + deal.meta.submitted);
           }
 
@@ -293,9 +293,11 @@ function parseUpcomingDealDates(upcoming) {
   let upcomingDates = upcoming.split('–');
 
   if (upcomingDates) {
-    let upcomingMatch =
-      upcomingDates[0].match(UpcomingDateTimeRegex) ??
-      upcomingDates[0].match(UpcomingDateRegex);
+    let upcomingMatch = upcomingDates[0].match(UpcomingDateTimeRegex);
+
+    upcomingMatch = upcomingMatch
+      ? upcomingMatch
+      : upcomingDates[0].match(UpcomingDateRegex);
 
     if (upcomingMatch) {
       upcomingDate = upcomingMatch[0];
@@ -310,9 +312,11 @@ function parseUpcomingDealDates(upcoming) {
     }
 
     if (upcomingDates.length > 1) {
-      let expiryMatch =
-        upcomingDates[1].match(UpcomingDateTimeRegex) ??
-        upcomingDates[1].match(UpcomingDateRegex);
+      let expiryMatch = upcomingDates[1].match(UpcomingDateTimeRegex);
+
+      expiryMatch = expiryMatch
+        ? expiryMatch
+        : upcomingDates[1].match(UpcomingDateRegex);
 
       if (expiryMatch) {
         let dateTime = DateTime.fromFormat(expiryMatch[0], 'd MMM h:mma');
