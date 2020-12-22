@@ -281,7 +281,7 @@ function parseDealMeta(meta) {
     }
   }
 
-  meta.date = dateTimeUnix;
+  meta.submitted.date = dateTimeUnix;
   meta.expiredDate = expiredDate;
   meta.upcomingDate = upcomingDate;
 

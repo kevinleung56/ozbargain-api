@@ -108,10 +108,10 @@ app.use((err, req, res, next) => {
 });
 
 // DEBUG
-const port = 3000;
+// const port = 3000;
 
-app.listen(port, () => {
-  console.log(`Example app listening at http://localhost:${port}`);
-});
+// app.listen(port, () => {
+//   console.log(`Example app listening at http://localhost:${port}`);
+// });
 
 module.exports = app;
