@@ -34,9 +34,26 @@ app.get('/deals', async (req, res) => {
   }
 });
 
+app.get('/deals/live', async (req, res) => {
+  const deals = await scraper.fetchLiveDeals();
+  if (deals) {
+    res.status(200).json(deals);
+  } else {
+    console.log(`Something is wrong with deals object: ${deals}`);
+    res.status(503).send('Something went wrong. Try again later');
+  }
+});
+
 app.get('/deal/:dealId', async (req, res) => {
   if (req.params.dealId) {
     const deal = await scraper.fetchDeal(req.params.dealId);
+
+    // if (req.query && req.query.comments) {
+    //   deal = await scraper.fetchDeal(req.params.dealId);
+    // } else {
+    //   deal = await scraper.fetchDeal(req.params.dealId);
+    // }
+
     if (deal) {
       res.status(200).json(deal);
     } else {
@@ -108,10 +125,10 @@ app.use((err, req, res, next) => {
 });
 
 // DEBUG
-// const port = 3000;
+const port = 3000;
 
-// app.listen(port, () => {
-//   console.log(`Example app listening at http://localhost:${port}`);
-// });
+app.listen(port, () => {
+  console.log(`Example app listening at http://localhost:${port}`);
+});
 
 module.exports = app;

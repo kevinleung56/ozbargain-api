@@ -6,15 +6,10 @@ const xray = require('x-ray');
 const { DateTime } = require('luxon');
 
 const x = new xray();
+const OZBARGAIN_HOMEPAGE_DEALS_URL = 'https://www.ozbargain.com.au/';
 const OZBARGAIN_DEALS_URL = 'https://www.ozbargain.com.au/deals/';
 const OZBARGAIN_NODE_URL = 'https://www.ozbargain.com.au/node/';
 const OZBARGAIN_FORUM_HOME_URL = 'https://www.ozbargain.com.au/forum/';
-// const OZBARGAIN_LIVE_DEALS_URL = 'https://www.ozbargain.com.au/live/';
-
-// const Action_VoteUp = 'Vote Up';
-// const Action_VoteDown = 'Vote Down';
-// const Action_Post = 'Post';
-// const liveActions = [Action_Post, Action_VoteUp, Action_VoteDown];
 
 const DateRegex = /\d{1,2}\/\d{1,2}\/\d{4}/;
 const TimeRegex = /\d{1,2}:\d{1,2}/;
@@ -24,7 +19,7 @@ const UpcomingDateRegex = /\d{1,2}\s[a-zA-Z]{3}/;
 
 function fetchDeals() {
   return new Promise(function (resolve, reject) {
-    x(OZBARGAIN_DEALS_URL, '.node-ozbdeal', [
+    x(OZBARGAIN_HOMEPAGE_DEALS_URL, '.node-ozbdeal', [
       {
         title: 'h2.title@data-title',
         link: 'h2.title a@href',
@@ -76,7 +71,7 @@ function fetchDeal(dealId) {
           image: 'img.gravatar@src',
           labels: ['div.messages ul li'],
           freebie: 'span.nodefreebie@text',
-          expired: '.links span.expired',
+          expiryDate: '.links span.expired',
           upcoming: 'span.upcoming',
           upcomingDate: 'span.nodeexpiry',
         },
@@ -94,33 +89,7 @@ function fetchDeal(dealId) {
         tags: ['.taxonomy span'],
       })
         .then(function (deal) {
-          let errors = [];
-          deal.meta = parseDealMeta(deal.meta);
-
-          if (deal.vote) {
-            if (!deal.vote.up || isNaN(parseInt(deal.vote.up))) {
-              deal.vote.up = '0';
-            }
-
-            if (!deal.vote.down || isNaN(parseInt(deal.vote.down))) {
-              deal.vote.down = '0';
-            }
-          } else {
-            deal.vote = {
-              up: '0',
-              down: '0',
-            };
-          }
-
-          if (!deal.meta.submitted.author) {
-            errors.push('Failed to parse author from ' + deal.meta.submitted);
-          }
-
-          if (!deal.meta.submitted.date) {
-            errors.push('Failed to parse date from ' + deal.meta.submitted);
-          }
-
-          deal.errors = errors;
+          cleanDealObject(deal);
           resolve(deal);
         })
         .catch(function (e) {
@@ -160,6 +129,36 @@ function fetchForums() {
   });
 }
 
+function cleanDealObject(dealObject) {
+  let errors = [];
+  dealObject.meta = parseDealMeta(dealObject.meta);
+
+  if (dealObject.vote) {
+    if (!dealObject.vote.up || isNaN(parseInt(dealObject.vote.up))) {
+      dealObject.vote.up = '0';
+    }
+
+    if (!dealObject.vote.down || isNaN(parseInt(dealObject.vote.down))) {
+      dealObject.vote.down = '0';
+    }
+  } else {
+    dealObject.vote = {
+      up: '0',
+      down: '0',
+    };
+  }
+
+  if (!dealObject.meta.submitted.author) {
+    errors.push('Failed to parse author from ' + dealObject.meta.submitted);
+  }
+
+  if (!dealObject.meta.submitted.date) {
+    errors.push('Failed to parse date from ' + dealObject.meta.submitted);
+  }
+
+  dealObject.errors = errors;
+}
+
 function cleanForumObject(forumObject, arr) {
   if (forumObject.forum && Object.keys(forumObject.forum).length === 0) {
     delete forumObject.forum;
@@ -184,19 +183,6 @@ function fetchNode(nodeId) {
         },
       },
       content: 'div.content',
-      // comments: x('li', [
-      //   {
-      //     commentedBy: {
-      //       avatar: x('div.n-left', 'img.gravatar@src'),
-      //       name: x('div.submitted', 'a'),
-      //       date: x('div.submitted'),
-      //       new: x('span.marker'),
-      //     },
-      //     voting: {
-      //       // x('div.c-vote') // TODO comments
-      //     },
-      //   },
-      // ]),
     })
       // .paginate('a.pager-next@href')
       .then(function (data) {
@@ -244,7 +230,43 @@ function fetchForum(forumId) {
   });
 }
 
-function fetchLiveDeals() {}
+function fetchLatestDeals() {
+  return new Promise(function (resolve, reject) {
+    x(OZBARGAIN_DEALS_URL, '.node-ozbdeal', [
+      {
+        title: 'h2.title@data-title',
+        link: 'h2.title a@href',
+        meta: {
+          submitted: x('div.submitted', {
+            associated: 'span.storerep',
+            author: 'strong',
+            thirdParty: 'span.referrer',
+          }),
+          image: 'img.gravatar@src',
+        },
+        coupon: 'div.couponcode',
+        description: x('.node-ozbdeal', ['p']),
+        vote: {
+          up: 'span.voteup',
+          down: 'span.votedown',
+        },
+        gravatar: 'img.gravatar@src',
+        snapshot: {
+          link: '.foxshot-container a@href',
+          image: '.foxshot-container img@src',
+        },
+        category: 'ul.links span.tag a',
+      },
+    ])
+      .paginate('a.pager-next@href')
+      .then(function (data) {
+        resolve(data);
+      })
+      .catch(function (e) {
+        reject(e);
+      });
+  });
+}
 
 function parseDealMeta(meta) {
   let dateTimeUnix, upcomingDate, expiredDate;
@@ -253,17 +275,25 @@ function parseDealMeta(meta) {
       let rawDateTime = meta.submitted.date;
       let dateTime = rawDateTime.match(DateRegex)[0];
       dateTime += ` ${rawDateTime.match(TimeRegex)[0]}`;
-      dateTimeUnix = DateTime.fromFormat(dateTime, 'dd/MM/yyyy T').toMillis();
+      dateTimeUnix = DateTime.fromFormat(dateTime, 'dd/MM/yyyy T');
+      dateTimeUnix = dateTimeUnix.isValid
+        ? dateTimeUnix.toMillis()
+        : dateTimeUnix.invalidReason; // note that upcoming date response will error message if error occurs
     } catch {
       console.log(
         `Issue with either lack of date/time or formatting of it: ${meta.submitted}`
       );
     }
 
-    if (meta.expired) {
-      let expired = meta.expired.match(ExpiredRegex);
-      if (expired) {
-        expiredDate = DateTime.fromFormat(expired[0], 'dd MMM t').toMillis();
+    if (meta.expiryDate) {
+      let expiryDate = meta.expiryDate.match(ExpiredRegex);
+      if (expiryDate) {
+        expiryDate = expiryDate[0].replace('pm', ' pm');
+        expiryDate = expiryDate.replace('am', ' am');
+        expiredDate = DateTime.fromFormat(expiryDate, 'dd MMM t');
+        expiredDate = expiredDate.isValid
+          ? expiredDate.toMillis()
+          : expiredDate.invalidReason; // note that upcoming date response will error message if error occurs
       }
     }
 
@@ -282,7 +312,7 @@ function parseDealMeta(meta) {
   }
 
   meta.submitted.date = dateTimeUnix;
-  meta.expiredDate = expiredDate;
+  meta.expiryDate = expiredDate;
   meta.upcomingDate = upcomingDate;
 
   return meta;
@@ -339,6 +369,6 @@ module.exports = {
   fetchForums: fetchForums,
   fetchDeal: fetchDeal,
   fetchForum: fetchForum,
-  fetchLiveDeals: fetchLiveDeals,
+  fetchLatestDeals: fetchLatestDeals,
   fetchNode: fetchNode,
 };
