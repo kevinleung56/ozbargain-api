@@ -35,7 +35,7 @@ app.get('/deals', async (req, res) => {
 });
 
 app.get('/deals/live', async (req, res) => {
-  const deals = await scraper.fetchLiveDeals();
+  const deals = await scraper.fetchLatestDeals();
   if (deals) {
     res.status(200).json(deals);
   } else {
