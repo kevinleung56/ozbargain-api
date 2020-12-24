@@ -101,6 +101,64 @@ function fetchDeal(dealId) {
   });
 }
 
+function fetchDealWithComments(dealId) {
+  return new Promise(function (resolve, reject) {
+    x(OZBARGAIN_NODE_URL.concat(dealId), '.main', {
+      id: dealId,
+      title: 'h1#title@data-title',
+      meta: {
+        submitted: x('div.submitted', {
+          associated: 'span.storerep',
+          author: 'strong',
+          thirdParty: 'span.referrer',
+          date: x('div.submitted'),
+        }),
+        image: 'img.gravatar@src',
+        labels: ['div.messages ul li'],
+        freebie: 'span.nodefreebie@text',
+        expiryDate: '.links span.expired',
+        upcoming: 'span.upcoming',
+        upcomingDate: 'span.nodeexpiry',
+      },
+      coupon: 'div.couponcode',
+      description: x('.node-ozbdeal', ['p']),
+      vote: {
+        up: 'span.voteup',
+        down: 'span.votedown',
+      },
+      snapshot: {
+        link: '.foxshot-container a@href',
+        image: '.foxshot-container img@src',
+      },
+      category: 'ul.links span.tag a',
+      tags: ['.taxonomy span'],
+      comments: {
+        allComments: x('ul.level0', [
+          {
+            author: ['strong'],
+            date: ['div.submitted'],
+            image: ['img.gravatar@src'],
+            content: ['p'],
+          },
+          ,
+        ]),
+        commentIdsFromAll: x('ul.level0', ['div.comment-wrap@id']),
+        commentIdsFromAllButLvl0: x('ul.level1', ['div.comment-wrap@id']),
+        commentIdsFromAllButLvl1: x('ul.level2', ['div.comment-wrap@id']),
+        commentIdsFromAllButLvl2: x('ul.level3', ['div.comment-wrap@id']),
+      },
+    })
+      .then(function (deal) {
+        cleanDealObject(deal);
+        parseCommentsAndIds(deal);
+        resolve(deal);
+      })
+      .catch(function (e) {
+        reject(e);
+      });
+  });
+}
+
 function fetchForums() {
   return new Promise(function (resolve, reject) {
     x(
@@ -159,6 +217,38 @@ function cleanDealObject(dealObject) {
   dealObject.errors = errors;
 }
 
+function parseCommentsAndIds(nodeObject) {
+  let commentsToParse = nodeObject.comments;
+  let commentTree = [];
+  commentsToParse.commentIdsFromAll.forEach((comment) => {
+    let isLvl1Or2Or3, isLvl2Or3, isLvl0, isLvl1, isLvl2, isLvl3;
+    isLvl1Or2Or3 = commentsToParse.commentIdsFromAllButLvl0.includes(comment);
+    isLvl2Or3 = commentsToParse.commentIdsFromAllButLvl1.includes(comment);
+    isLvl3 = commentsToParse.commentIdsFromAllButLvl2.includes(comment);
+    isLvl0 = !(isLvl1Or2Or3 || isLvl2Or3 || isLvl3);
+    isLvl1 = isLvl1Or2Or3 && !isLvl2Or3 && !isLvl3;
+    isLvl2 = isLvl1Or2Or3 && isLvl2Or3 && !isLvl3;
+
+    commentTree.push({
+      level: isLvl0 ? 0 : isLvl1 ? 1 : isLvl2 ? 2 : isLvl3 ? 3 : -1,
+      id: comment,
+    });
+  });
+
+  let comments = commentTree.map((comment, index) => {
+    return {
+      id: comment.id,
+      level: comment.level,
+      content: commentsToParse.allComments[0].content[index],
+      image: commentsToParse.allComments[0].image[index],
+      author: commentsToParse.allComments[0].author[index],
+      date: commentsToParse.allComments[0].date[index],
+    };
+  });
+
+  nodeObject.comments = comments;
+}
+
 function cleanForumObject(forumObject, arr) {
   if (forumObject.forum && Object.keys(forumObject.forum).length === 0) {
     delete forumObject.forum;
@@ -171,9 +261,9 @@ function cleanForumObject(forumObject, arr) {
 }
 
 function fetchNode(nodeId) {
-  // TODO
   return new Promise(function (resolve, reject) {
     x(OZBARGAIN_NODE_URL.concat(nodeId), '.main', {
+      id: nodeId,
       title: 'h1.title',
       meta: {
         submitted: {
@@ -186,6 +276,46 @@ function fetchNode(nodeId) {
     })
       // .paginate('a.pager-next@href')
       .then(function (data) {
+        resolve(data);
+      })
+      .catch(function (e) {
+        reject(e);
+      });
+  });
+}
+
+function fetchNodeWithComments(nodeId) {
+  return new Promise(function (resolve, reject) {
+    x(OZBARGAIN_NODE_URL.concat(nodeId), '.main', {
+      id: nodeId,
+      title: 'h1.title',
+      meta: {
+        submitted: {
+          avatar: x('div.n-left', 'img.gravatar@src'),
+          author: x('div.submitted', 'a'),
+          date: x('div.submitted'),
+        },
+      },
+      content: 'div.content',
+      comments: {
+        allComments: x('ul.level0', [
+          {
+            author: ['strong'],
+            date: ['div.submitted'],
+            image: ['img.gravatar@src'],
+            content: ['p'],
+          },
+          ,
+        ]),
+        commentIdsFromAll: x('ul.level0', ['div.comment-wrap@id']),
+        commentIdsFromAllButLvl0: x('ul.level1', ['div.comment-wrap@id']),
+        commentIdsFromAllButLvl1: x('ul.level2', ['div.comment-wrap@id']),
+        commentIdsFromAllButLvl2: x('ul.level3', ['div.comment-wrap@id']),
+      },
+    })
+      // .paginate('a.pager-next@href')
+      .then(function (data) {
+        parseCommentsAndIds(data);
         resolve(data);
       })
       .catch(function (e) {
@@ -318,6 +448,56 @@ function parseDealMeta(meta) {
   return meta;
 }
 
+function parseCommentMeta(meta) {
+  let dateTimeUnix, upcomingDate, expiredDate;
+  if (meta.submitted) {
+    try {
+      let rawDateTime = meta.submitted.date;
+      let dateTime = rawDateTime.match(DateRegex)[0];
+      dateTime += ` ${rawDateTime.match(TimeRegex)[0]}`;
+      dateTimeUnix = DateTime.fromFormat(dateTime, 'dd/MM/yyyy T');
+      dateTimeUnix = dateTimeUnix.isValid
+        ? dateTimeUnix.toMillis()
+        : dateTimeUnix.invalidReason; // note that upcoming date response will error message if error occurs
+    } catch {
+      console.log(
+        `Issue with either lack of date/time or formatting of it: ${meta.submitted}`
+      );
+    }
+
+    if (meta.expiryDate) {
+      let expiryDate = meta.expiryDate.match(ExpiredRegex);
+      if (expiryDate) {
+        expiryDate = expiryDate[0].replace('pm', ' pm');
+        expiryDate = expiryDate.replace('am', ' am');
+        expiredDate = DateTime.fromFormat(expiryDate, 'dd MMM t');
+        expiredDate = expiredDate.isValid
+          ? expiredDate.toMillis()
+          : expiredDate.invalidReason; // note that upcoming date response will error message if error occurs
+      }
+    }
+
+    if (meta.upcoming && meta.upcomingDate) {
+      let upcomingDealDates = parseUpcomingDealDates(meta.upcomingDate.trim());
+      upcomingDate = upcomingDealDates.upcomingDate;
+
+      if (upcomingDealDates.expiryDate) {
+        expiredDate = upcomingDealDates.expiryDate;
+      }
+    }
+
+    if (meta.freebie) {
+      meta.freebie = meta.freebie.trim() === 'Freebie';
+    }
+  }
+
+  meta.submitted.date = dateTimeUnix;
+  meta.expiryDate = expiredDate;
+  meta.upcomingDate = upcomingDate;
+
+  return meta;
+}
+
 function parseUpcomingDealDates(upcoming) {
   let upcomingDate, expiryDate;
   let upcomingDates = upcoming.split('–');
@@ -368,7 +548,9 @@ module.exports = {
   fetchDeals: fetchDeals,
   fetchForums: fetchForums,
   fetchDeal: fetchDeal,
+  fetchDealWithComments: fetchDealWithComments,
   fetchForum: fetchForum,
   fetchLatestDeals: fetchLatestDeals,
   fetchNode: fetchNode,
+  fetchNodeWithComments: fetchNodeWithComments,
 };

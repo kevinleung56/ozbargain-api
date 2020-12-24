@@ -46,13 +46,13 @@ app.get('/deals/live', async (req, res) => {
 
 app.get('/deal/:dealId', async (req, res) => {
   if (req.params.dealId) {
-    const deal = await scraper.fetchDeal(req.params.dealId);
+    let deal;
 
-    // if (req.query && req.query.comments) {
-    //   deal = await scraper.fetchDeal(req.params.dealId);
-    // } else {
-    //   deal = await scraper.fetchDeal(req.params.dealId);
-    // }
+    if (req.query && req.query.comments) {
+      deal = await scraper.fetchDealWithComments(req.params.dealId);
+    } else {
+      deal = await scraper.fetchDeal(req.params.dealId);
+    }
 
     if (deal) {
       res.status(200).json(deal);
@@ -78,9 +78,8 @@ app.get('/forums', async (req, res) => {
 });
 
 app.get('/forum/:forumId', async (req, res) => {
-  let forumId = req.params.forumId;
-  if (forumId) {
-    const forum = await scraper.fetchForum(forumId);
+  if (req.params.forumId) {
+    const forum = await scraper.fetchForum(req.params.forumId);
     if (forum) {
       res.status(200).json(forum);
     } else {
@@ -97,9 +96,15 @@ app.get('/forum/:forumId', async (req, res) => {
 });
 
 app.get('/node/:nodeId', async (req, res) => {
-  let nodeId = req.params.nodeId;
-  if (nodeId) {
-    const node = await scraper.fetchNode(nodeId);
+  if (req.params.nodeId) {
+    let node;
+
+    if (req.query && req.query.comments) {
+      node = await scraper.fetchNodeWithComments(req.params.nodeId);
+    } else {
+      node = await scraper.fetchNode(req.params.nodeId);
+    }
+
     if (node) {
       res.status(200).json(node);
     } else {
@@ -125,10 +130,10 @@ app.use((err, req, res, next) => {
 });
 
 // DEBUG
-const port = 3000;
+// const port = 3000;
 
-app.listen(port, () => {
-  console.log(`Example app listening at http://localhost:${port}`);
-});
+// app.listen(port, () => {
+//   console.log(`Example app listening at http://localhost:${port}`);
+// });
 
 module.exports = app;
