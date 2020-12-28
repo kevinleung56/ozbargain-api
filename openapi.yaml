@@ -1,0 +1,212 @@
+openapi: 3.0.1
+info:
+  title: Ozbargain API
+  description: "This is an api that parses, cleans and serves Ozbargain's data in a form that others can use."
+  contact:
+    {
+      name: GitHub Repository,
+      url: https://github.com/kevinleung56/ozbargain-api,
+    }
+  version: 1.0.0
+servers:
+  - url: https://b3bc03c4lg.execute-api.ap-southeast-2.amazonaws.com
+tags:
+  - name: deals
+    description: Deal posts
+  - name: deal
+    description: Specific posts
+  - name: forums
+    description: All top-level forums
+  - name: forum
+    description: All top-level threads for a forum
+  - name: node
+    description: Specific forum posts
+paths:
+  /deals:
+    get:
+      tags:
+        - deals
+      summary: Get all front-page deals
+      responses:
+        200:
+          description: Array of all front-page deals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Deal"
+        503:
+          description: Server error
+          content: {}
+  /deals/live:
+    get:
+      tags:
+        - deals
+      summary: Get newest deals
+      responses:
+        200:
+          description: Array of newest deals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Deal"
+        503:
+          description: Server error
+          content: {}
+  /deal/{dealId}:
+    get:
+      tags:
+        - deal
+      summary: Gets a specific deal via node id
+      responses:
+        200:
+          description: Deal object
+          content:
+            application/json:
+              schema:
+                type: object
+                items:
+                  $ref: "#/components/schemas/Deal"
+        503:
+          description: Server error
+          content: {}
+  /forums:
+    post:
+      tags:
+        - forums
+      responses:
+        200:
+          description: All forums
+          content:
+            application/json:
+              schema:
+                type: object
+                items:
+                  $ref: "#/components/schemas/Forum"
+        503:
+          description: Server error
+          content: {}
+  /forum/{forumId}:
+    get:
+      tags:
+        - forum
+      summary: Gets a specific forum via node id
+      responses:
+        200:
+          description: Specific forum and topics
+          content:
+            application/json:
+              schema:
+                type: object
+                items:
+                  $ref: "#/components/schemas/Forum"
+        503:
+          description: Server error
+          content: {}
+  /node/{nodeId}:
+    get:
+      tags:
+        - node
+      summary: Gets a specific deal via node id
+      responses:
+        200:
+          description: Specific deal
+          content:
+            application/json:
+              schema:
+                type: object
+                items:
+                  $ref: "#/components/schemas/Node"
+        503:
+          description: Server error
+          content: {}
+components:
+  schemas:
+    Deal:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        petId:
+          type: integer
+          format: int64
+        quantity:
+          type: integer
+          format: int32
+        shipDate:
+          type: string
+          format: date-time
+        status:
+          type: string
+          description: Order Status
+          enum:
+            - placed
+            - approved
+            - delivered
+        complete:
+          type: boolean
+          default: false
+      xml:
+        name: Order
+    Node:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+      xml:
+        name: Category
+    Forum:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        username:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+        phone:
+          type: string
+        userStatus:
+          type: integer
+          description: User Status
+          format: int32
+      xml:
+        name: User
+    Forums: 
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        username:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+        phone:
+          type: string
+        userStatus:
+          type: integer
+          description: User Status
+          format: int32
+      xml:
+        name: User
