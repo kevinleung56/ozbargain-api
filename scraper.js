@@ -329,10 +329,9 @@ function fetchNodeWithComments(nodeId) {
       comments: {
         allComments: x('ul.level0', [
           {
-            author: ['strong'],
-            date: ['div.submitted'],
             image: ['img.gravatar@src'],
-            content: ['p'],
+            content: ['div.content'],
+            fullContent: ['div.comment'],
           },
           ,
         ]),
