@@ -13,6 +13,8 @@ const OZBARGAIN_FORUM_HOME_URL = 'https://www.ozbargain.com.au/forum/';
 
 const DateRegex = /\d{1,2}\/\d{1,2}\/\d{4}/;
 const TimeRegex = /\d{1,2}:\d{1,2}/;
+const DateTimeRegex = /\d{1,2}\/\d{1,2}\/\d{4} - \d{1,2}:\d{1,2}/;
+const AuthorRegex = /((\w+)\s){1,}on/;
 const ExpiredRegex = /\d{1,2}[\sa-zA-Z]{1,10}\d{1,2}:\d{1,2}([a-zA-Z]{2})?/;
 const UpcomingDateTimeRegex = /((\d{1,2}\s[a-zA-Z]{3}(\s\d{1,2}:\d{1,2})?([a-zA-Z]{2})?)|\d{2})/;
 const UpcomingDateRegex = /\d{1,2}\s[a-zA-Z]{3}/;
@@ -135,10 +137,9 @@ function fetchDealWithComments(dealId) {
       comments: {
         allComments: x('ul.level0', [
           {
-            author: ['strong'],
-            date: ['div.submitted'],
             image: ['img.gravatar@src'],
-            content: ['p'],
+            content: ['div.content'],
+            fullContent: ['div.comment'],
           },
           ,
         ]),
@@ -219,6 +220,34 @@ function cleanDealObject(dealObject) {
 
 function parseCommentsAndIds(nodeObject) {
   let commentsToParse = nodeObject.comments;
+
+  if (
+    commentsToParse.allComments[0].content.length !==
+    commentsToParse.allComments[0].fullContent.length
+  ) {
+    commentsToParse.allComments[0].fullContent.forEach((comment, index) => {
+      if (!comment.includes(commentsToParse.allComments[0].content[index])) {
+        commentsToParse.allComments[0].content.splice(
+          index,
+          0,
+          'Comment score below threshold'
+        );
+      }
+    });
+  }
+
+  commentsToParse.allComments[0].author = commentsToParse.allComments[0].fullContent.map(
+    (comment) => {
+      return comment.match(AuthorRegex)[0].replace(/ .*/, '');
+    }
+  );
+
+  commentsToParse.allComments[0].date = commentsToParse.allComments[0].fullContent.map(
+    (comment) => {
+      return comment.match(DateTimeRegex)[0];
+    }
+  );
+
   let commentTree = [];
   commentsToParse.commentIdsFromAll.forEach((comment) => {
     let isLvl1Or2Or3, isLvl2Or3, isLvl0, isLvl1, isLvl2, isLvl3;
