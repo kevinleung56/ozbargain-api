@@ -1,16 +1,12 @@
-# ozbargain-api
+<!-- Generator: Widdershins v4.0.1 -->
+
+<h1 id="ozbargain-api">Ozbargain API v1.0.0</h1>
 
 ### This is an api that parses, cleans and serves Ozbargain's data in a form that others can use
 
 - npm install required
 - AWS credentials required in env file
 - Hosted on serverless with AWS Lambda
-
-#### Endpoint currently located at https://b3bc03c4lg.execute-api.ap-southeast-2.amazonaws.com
-
-<!-- Generator: Widdershins v4.0.1 -->
-
-<h1 id="ozbargain-api">Ozbargain API v1.0.0</h1>
 
 > Scroll down for code samples, example requests and responses. Select a language for code samples from the tabs above or the mobile navigation menu.
 
