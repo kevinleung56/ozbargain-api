@@ -1,17 +1,3 @@
----
-title: Ozbargain API v1.0.0
-language_tabs:
-  - javascript: Javascript
-language_clients:
-  - javascript: ""
-toc_footers: []
-includes: []
-search: true
-highlight_theme: darkula
-headingLevel: 2
-
----
-
 <!-- Generator: Widdershins v4.0.1 -->
 
 <h1 id="ozbargain-api">Ozbargain API v1.0.0</h1>
