@@ -9,6 +9,7 @@
     "express": "^4.17.1",
     "luxon": "^1.25.0",
     "showdown": "^1.9.1",
+    "widdershins": "^4.0.1",
     "x-ray": "^2.3.4"
   },
   "scripts": {

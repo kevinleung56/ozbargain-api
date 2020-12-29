@@ -1,5 +1,6 @@
 'use strict';
 
+const fs = require('fs');
 const express = require('express');
 const scraper = require('./scraper');
 const showdown = require('showdown');
@@ -7,21 +8,22 @@ const app = express();
 
 // Routes
 app.get('/', async (req, res) => {
-  let converter = new showdown.Converter({ tables: true });
-  // converter.setFlavor('github');
-  // let tableMarkdown =
-  //   '|     |    GET   |   POST   |   h4   |\n' +
-  //   '|:------|:-------:|:-------:|-------:|\n' +
-  //   '| 100   | [a][1]  | ![b][2] |\n' +
-  //   '| *foo* | **bar** | ~~baz~~ |';
-  let markdown =
-    '# Welcome to the Ozbargain API!\n' +
-    // '##The following is the API documentation\n' +
-    '### Hope you enjoy :)\n' +
-    '#### - Kevin\n';
-  // tableMarkdown;
-  let html = converter.makeHtml(markdown);
-  res.status(200).send(html);
+  fs.readFile('./openapi.md', 'utf8', (err, data) => {
+    if (!err) {
+      let converter = new showdown.Converter();
+      let markdown =
+        '# Welcome to the Ozbargain API!\n' +
+        '##The following is the API documentation (best seen on GitHub) \n' +
+        '### Hope you enjoy :)\n' +
+        '#### - Kevin\n\n';
+      markdown += data;
+      let html = converter.makeHtml(markdown);
+      res.status(200).send(html);
+    } else {
+      console.log(err);
+      res.status(500).send('Something went wrong on our end.');
+    }
+  });
 });
 
 app.get('/deals', async (req, res) => {
@@ -121,7 +123,6 @@ app.get('/node/:nodeId', async (req, res) => {
 });
 
 // Error handler
-// eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
   if (err) {
     console.error(err);
