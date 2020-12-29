@@ -14,7 +14,7 @@ Base URLs:
 
 - <a href="https://b3bc03c4lg.execute-api.ap-southeast-2.amazonaws.com">https://b3bc03c4lg.execute-api.ap-southeast-2.amazonaws.com</a>
 
-Web: <a href="https://github.com/kevinleung56/ozbargain-api,">GitHub Repository,</a>
+Web: <a href="https://github.com/kevinleung56/ozbargain-api">GitHub Repository</a>
 
 <h1 id="ozbargain-api-deals">deals</h1>
 
